@@ -1,6 +1,15 @@
 #include "vga.h"
 
+#if defined(__WATCOMC__)
+#include <conio.h>
+#include <string.h>
+#define inport(px) inpw(px)
+#define inportb(px) inp(px)
 
+#endif
+
+
+#if defined(__GNUC__)
 void videoInit(uint8_t mode)
 {
     asm volatile
@@ -11,7 +20,25 @@ void videoInit(uint8_t mode)
         : "r" (mode)
         : "ax");
 }
+#endif
 
+#if defined(__WATCOMC__)
+
+extern void _videoInit(uint8_t mode);
+#pragma aux _videoInit =    \
+    "mov ah, 0"        \
+    "int 10h"          \
+    modify [ax]        \
+    parm [al];
+
+void videoInit(uint8_t mode)
+{
+    _videoInit(mode);
+}
+#endif
+
+
+#if defined(__GNUC__)
 inline void drawVLine(uint16_t x, uint16_t y, uint16_t h, uint8_t color)
 {
     uint16_t offset = 20 * y; // (320 / 16 == 20)
@@ -90,17 +117,26 @@ void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
     if (w == 1)   drawVLine(x,y,h,color);
     else if (w&1) drawRectOdd(x,y,w,h,color);
     else          drawRectEven(x,y,w,h,color);
-
-    // static char __far* screen = (char __far*)(0xA0000000L);
-    // for (int i = 0; i < h; ++i)
-    // {
-    //     char __far *drawPos = screen + (y + i) * SCREEN_W + x;
-    //     for (int n = 0; n < w; ++n)
-    //     {
-    //         *drawPos++ = color;
-    //     }
-    // }
 }
+
+#endif
+
+#if defined(__WATCOMC__)
+void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
+{
+    static char far* screen = (char far*)(0xA0000000L);
+    char far* pos = screen + y * SCREEN_W + x;
+    for (int i = 0; i < h; ++i)
+    {
+        // for (int n = 0; n < w; ++n)
+        // {
+        //     *drawPos++ = color;
+        // }
+        _fmemset(pos, color, w);
+        pos += SCREEN_W;
+    }
+}
+#endif
 
 
 void clearScreen()
@@ -109,7 +145,7 @@ void clearScreen()
 }
 
 
-
+#if defined(__GNUC__)
 /* Input a byte from a port */
 inline unsigned char inportb(unsigned int port)
 {
@@ -126,6 +162,9 @@ inline void outportb(unsigned int port,unsigned char value)
 {
    asm volatile ("outb %%al,%%dx": :"d" (port), "a" (value));
 }
+
+#endif
+
 
 #define CGA_STATUS_REG 0x03DA
 #define VERTICAL_RETRACE_BIT 0x08

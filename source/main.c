@@ -19,11 +19,22 @@ void drawPaddle(const Paddle* paddle, uint8_t color)
     drawRect(paddle->x, paddle->y, paddle->w, paddle->h, color);
 }
 
+#if defined(__WATCOMC__)
+extern void printChar(uint8_t ch);
+#pragma aux printChar =    \
+    "mov ah, 02h, "  /* set ah to 02 == print character */ \
+    "int 21h"            \
+    modify [ah]        \
+    parm [dl];
+#endif
+
 
 void printString(const char* str)
 {
     while (*str)
     {
+
+#if defined(__GNUC__)
         asm volatile(
             "mov %0, %%dl\n"     // load character to print to dl
             "mov $0x02, %%ah\n"  // set ah to 02 == print character
@@ -32,6 +43,10 @@ void printString(const char* str)
             : "m" (*str)
             : "dx", "ax"
         );
+#elif defined(__WATCOMC__)
+        printChar(*str);
+#endif
+
         ++str;
     }
 }
@@ -158,8 +173,11 @@ int main()
     unRegisterKeyboardHandler();
     videoInit(0x3);
 
-    
+#if defined(__GNUC__)
     printString("Thanks for playing!\r\nBuilt using GCC 6.3 in 2021\r\n");
+#elif defined(__WATCOMC__)
+    printString("Thanks for playing!\r\nBuilt using OpenWatcom 1.9 in 2021\r\n");
+#endif
 
     return 0;
 }

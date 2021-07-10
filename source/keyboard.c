@@ -38,6 +38,7 @@ void __interrupt __far handleScancode( void )
 {
     uint8_t code;
 
+#if defined(__GNUC__)
     asm volatile
        ("cli\n"
         "inb   $0x60, %%al\n"    /* read scan code */
@@ -58,6 +59,27 @@ void __interrupt __far handleScancode( void )
         : "=r" (code)
         : 
         : "ax", "bx");
+#endif
+#if defined(__WATCOMC__)
+     __asm   {
+        cli
+        in    al, 060h       /* read scan code */
+        mov   code, al
+        in    al, 061h       /* read keyboard status */
+        mov   bl, al
+        or    al, 080h
+        out   061h, al       /* set bit 7 and write */
+        mov   al, bl
+        out   061h, al       /* write again, bit 7 clear */
+
+        mov   al, 020h       /* reset PIC */
+        out   020h, al
+
+        /* end of re-set code */
+
+        sti
+    }
+#endif
         
     s_scancode = code;
 

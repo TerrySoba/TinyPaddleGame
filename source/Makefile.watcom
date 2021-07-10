@@ -1,0 +1,25 @@
+objects_game = 	main.o vga.o keyboard.o draw_number.o
+coptions = -ms -oneatx -xd -zp4 -0
+
+dest     = game.exe
+
+all: $(dest)
+
+$(dest): _$(dest)
+	upx -9 --ultra-brute -f --8086 -o$(dest) _$(dest)
+
+main.o: vga.h keyboard.h draw_number.h
+vga.o: vga.h
+keyboard.o: keyboard.h
+draw_number.o: draw_number.h vga.h
+
+%.o : %.c
+	wpp $(coptions) $<
+
+FORCE:
+
+_$(dest): $(objects_game)
+	echo "NAME   $@" > game.lnk
+	echo "SYSTEM DOS" >> game.lnk
+	echo "FILE   {$(objects_game)}" >> game.lnk
+	wlink  @game.lnk

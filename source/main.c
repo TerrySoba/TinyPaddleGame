@@ -44,13 +44,8 @@ int main()
     registerKeyboardHandler();
     videoInit(0x13);
 
-    
-
-    
-
     int16_t dx = 4;
     int16_t dy = 3;
-
 
     Paddle leftPaddle = {10,10,5,40};
     Paddle rightPaddle = {300,10,5,40};
@@ -97,11 +92,19 @@ int main()
             ballX += dx;
             ballY += dy;
 
+            if (ballX >= rightPaddle.x && ballY >= rightPaddle.y && ballY <= rightPaddle.y + rightPaddle.h)
+            {
+                dx = -abs(dx);
+            }
             if (ballX > PLAYFIELD_W)
             {
                 dx = -abs(dx);
                 ballX = PLAYFIELD_W;
                 ++leftScore;
+            }
+            if (ballX <= leftPaddle.x && ballY >= leftPaddle.y && ballY <= leftPaddle.y + leftPaddle.h)
+            {
+                dx = abs(dx);
             }
             if (ballX < 0)
             {
@@ -156,7 +159,7 @@ int main()
     videoInit(0x3);
 
     
-    printString("Thanks for playing!\r\n");
+    printString("Thanks for playing!\r\nBuilt using GCC 6.3 in 2021\r\n");
 
     return 0;
 }

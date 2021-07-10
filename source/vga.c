@@ -12,6 +12,23 @@ void videoInit(uint8_t mode)
         : "ax");
 }
 
+inline void drawVLine(uint16_t x, uint16_t y, uint16_t h, uint8_t color)
+{
+    uint16_t offset = 20 * y; // (320 / 16 == 20)
+    asm ("mov $40960, %%ax\n" // $40960 is the address of the VGA graphics ram
+        "add %1, %%ax\n"
+        "mov %%ax, %%ds\n"    // set segment register to VGA
+        "mov %2, %%dl\n"      // set color
+        "mov %0, %%bx\n"      // set offset to x
+        "mov %3, %%cx\n"      // initialize loop counter cx
+        "1%=:\n"
+        "mov %%dl, (%%bx)\n"  // draw pixel to vram
+        "add $320, %%bx\n"    // skip to next line (screen is 320 pixels wide)
+        "loop 1%=b\n"         // loop until cx is 0 (loop decrements cx each loop)
+        :
+        : "m" (x), "r" (offset), "m" (color), "r" (h)
+        : "ds", "ax", "bx", "cx", "dl");
+}
 
 inline void drawRectEven(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
 {
@@ -43,7 +60,6 @@ inline void drawRectEven(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t
 inline void drawRectOdd(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
 {
     w = w >> 1; // w = w/2
-
     uint16_t offset = 20 * y;
     asm ("mov $40960, %%ax\n" // $40960 is the address of the VGA graphics ram
         "add %2, %%ax\n"
@@ -71,9 +87,9 @@ inline void drawRectOdd(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t 
 
 void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
 {
-
-    if (w&1) drawRectEven(x,y,w,h,color);
-    else     drawRectOdd(x,y,w,h,color);
+    if (w == 1)   drawVLine(x,y,h,color);
+    else if (w&1) drawRectOdd(x,y,w,h,color);
+    else          drawRectEven(x,y,w,h,color);
 
     // static char __far* screen = (char __far*)(0xA0000000L);
     // for (int i = 0; i < h; ++i)

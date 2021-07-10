@@ -1,6 +1,6 @@
 CC=ia16-elf-gcc
 CFLAGS=-I. -mcmodel=tiny -march=i8086 -Os
-OBJS=main.o vga.o keyboard.o
+OBJS=main.o vga.o keyboard.o draw_number.o
 LIBS=-li86
 
 %.o: %.c

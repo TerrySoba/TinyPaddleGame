@@ -3,7 +3,7 @@
 #include "vga.h"
 #include "draw_number.h"
 #include "keyboard.h"
-
+#include "sound_engine.h"
 
 #define abs(x) ((x > 0)?(x):(-x))
 
@@ -56,6 +56,9 @@ void printString(const char* str)
 
 int main()
 {
+    SoundContext soundContext;
+    initSound(&soundContext);
+
     registerKeyboardHandler();
     videoInit(0x13);
 
@@ -83,7 +86,7 @@ int main()
 
         do
         {
-        
+            processSound(&soundContext);
             waitForVSync();
             // first delete old gfx
             drawRect(ballX, ballY, 3, 3, 0);
@@ -110,22 +113,26 @@ int main()
             if (ballX >= rightPaddle.x && ballY >= rightPaddle.y && ballY <= rightPaddle.y + rightPaddle.h)
             {
                 dx = -abs(dx);
+                playNote(&soundContext, G4, 70);
             }
             if (ballX > PLAYFIELD_W)
             {
                 dx = -abs(dx);
                 ballX = PLAYFIELD_W;
                 ++leftScore;
+                playNote(&soundContext, D4b, 70);
             }
             if (ballX <= leftPaddle.x && ballY >= leftPaddle.y && ballY <= leftPaddle.y + leftPaddle.h)
             {
                 dx = abs(dx);
+                playNote(&soundContext, G4b, 70);
             }
             if (ballX < 0)
             {
                 dx = abs(dx);
                 ballX = 0;
                 ++rightScore;
+                playNote(&soundContext, D4b, 70);
             }
             if (ballY > PLAYFIELD_H)
             {
@@ -172,6 +179,8 @@ int main()
 
     unRegisterKeyboardHandler();
     videoInit(0x3);
+
+    deInitSound(&soundContext);
 
 #if defined(__GNUC__)
     printString("Thanks for playing!\r\nBuilt using GCC 6.3 in 2021\r\n");

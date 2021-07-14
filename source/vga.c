@@ -12,12 +12,11 @@
 #if defined(__GNUC__)
 void videoInit(uint8_t mode)
 {
-    asm volatile
-       ("mov %0, %%al\n"
+    asm("mov %0, %%al\n"
         "mov $0, %%ah\n"
         "int $0x10"
         : 
-        : "r" (mode)
+        : "m" (mode)
         : "ax");
 }
 #endif
@@ -48,10 +47,10 @@ inline void drawVLine(uint16_t x, uint16_t y, uint16_t h, uint8_t color)
         "mov %2, %%dl\n"      // set color
         "mov %0, %%bx\n"      // set offset to x
         "mov %3, %%cx\n"      // initialize loop counter cx
-        "1%=:\n"
+        "%=:\n"
         "mov %%dl, (%%bx)\n"  // draw pixel to vram
         "add $320, %%bx\n"    // skip to next line (screen is 320 pixels wide)
-        "loop 1%=b\n"         // loop until cx is 0 (loop decrements cx each loop)
+        "loop %=b\n"         // loop until cx is 0 (loop decrements cx each loop)
         :
         : "m" (x), "r" (offset), "m" (color), "r" (h)
         : "ds", "ax", "bx", "cx", "dl");
@@ -59,56 +58,51 @@ inline void drawVLine(uint16_t x, uint16_t y, uint16_t h, uint8_t color)
 
 inline void drawRectEven(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
 {
-    w = w >> 1; // w = w/2
-
     uint16_t offset = 20 * y;
-    asm ("mov $40960, %%ax\n" // $40960 is the address of the VGA graphics ram
-        "add %2, %%ax\n"
-        "mov %%ax, %%ds\n"    // set segment register to VGA
-        "mov %3, %%dl\n"      // set color
-        "mov %3, %%dh\n"      // set color
-        "1%=:\n"
-        "mov %0, %%bx\n"      // set offset to x
+    asm  ("mov $40960, %%bx\n" // $40960 is the address of the VGA graphics ram
+        "add %2, %%bx\n"
+        "mov %%bx, %%es\n"    // set segment register to VGA
+        "mov %3, %%al\n"      // set color
+        "mov %3, %%ah\n"      // set color
+        "cld\n"               // set DF to 0
+        "%=:\n"
+        "mov %0, %%di\n"      // set offset to x
         "mov %1, %%cx\n"      // set length to w
-        "2%=:\n"
-        "mov %%dx, (%%bx)\n"  // draw pixel to vram
-        "add $2, %%bx\n"      // increment pixel position
-        "loop 2%=b\n"         // execute loop until cx is 0 (cx = cx - 1) 
+        "shrw $1, %%cx\n"     // divide length by 2
+        "rep stosw\n"         // copy ax -> es:di++ until cx-- == 0
 
-        "add $20, %%ax\n"     // skip to next line (320 / 16 = 20)
-        "mov %%ax, %%ds\n"
+        "add $20, %%bx\n"     // skip to next line (320 / 16 = 20)
+        "mov %%bx, %%es\n"    
         "sub $1, %4\n"        // decrement h
-        "jnz 1%=b\n"          // loop until h is 0
+        "jnz %=b\n"          // loop until h is 0
         :
         : "m" (x), "m" (w), "r" (offset), "m" (color), "r" (h)
-        : "ds", "ax", "bx", "cx", "dx");
+        : "es", "ax", "cx", "di", "bx");
 }
 
 inline void drawRectOdd(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
 {
-    w = w >> 1; // w = w/2
     uint16_t offset = 20 * y;
-    asm ("mov $40960, %%ax\n" // $40960 is the address of the VGA graphics ram
-        "add %2, %%ax\n"
-        "mov %%ax, %%ds\n"    // set segment register to VGA
-        "mov %3, %%dl\n"      // set color
-        "mov %3, %%dh\n"      // set color
-        "1%=:\n"
-        "mov %0, %%bx\n"      // set offset to x
+    asm  ("mov $40960, %%bx\n" // $40960 is the address of the VGA graphics ram
+        "add %2, %%bx\n"
+        "mov %%bx, %%es\n"    // set segment register to VGA
+        "mov %3, %%al\n"      // set color
+        "mov %3, %%ah\n"      // set color
+        "cld\n"               // set DF to 0
+        "%=:\n"
+        "mov %0, %%di\n"      // set offset to x
         "mov %1, %%cx\n"      // set length to w
-        "2%=:\n"
-        "mov %%dx, (%%bx)\n"  // draw pixel to vram
-        "add $2, %%bx\n"      // increment pixel position
-        "loop 2%=b\n"         // execute loop until cx is 0 (cx = cx - 1) 
-        "mov %%dl, (%%bx)\n"  // draw extra pixel to vram <---- THIS IS THE DIFFERENCE!!!!
+        "shrw $1, %%cx\n"     // divide length by 2
+        "rep stosw\n"         // copy ax -> es:di++ until cx-- == 0
+        "stosb\n"             // store an additional byte as width is odd
 
-        "add $20, %%ax\n"     // skip to next line (320 / 16 = 20)
-        "mov %%ax, %%ds\n"
+        "add $20, %%bx\n"     // skip to next line (320 / 16 = 20)
+        "mov %%bx, %%es\n"    
         "sub $1, %4\n"        // decrement h
-        "jnz 1%=b\n"          // loop until h is 0
+        "jnz %=b\n"          // loop until h is 0
         :
         : "m" (x), "m" (w), "r" (offset), "m" (color), "r" (h)
-        : "ds", "ax", "bx", "cx", "dx");
+        : "es", "ax", "cx", "di", "bx");
 }
 
 
@@ -128,10 +122,6 @@ void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color)
     char far* pos = screen + y * SCREEN_W + x;
     for (int i = 0; i < h; ++i)
     {
-        // for (int n = 0; n < w; ++n)
-        // {
-        //     *drawPos++ = color;
-        // }
         _fmemset(pos, color, w);
         pos += SCREEN_W;
     }

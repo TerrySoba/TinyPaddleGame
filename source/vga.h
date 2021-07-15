@@ -7,7 +7,7 @@
 #define SCREEN_H 200
 
 void videoInit(uint8_t mode);
-void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color);
+void drawRect(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t color);
 void clearScreen();
 void waitForVSync();
 

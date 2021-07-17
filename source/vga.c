@@ -12,12 +12,11 @@
 #if defined(__GNUC__)
 void videoInit(uint8_t mode)
 {
-    asm("mov %0, %%al\n"
-        "mov $0, %%ah\n"
+    asm("mov $0, %%ah\n"
         "int $0x10"
         : 
-        : "m" (mode)
-        : "ax");
+        : "Ral" (mode)
+        : "ah");
 }
 #endif
 
@@ -75,50 +74,48 @@ inline void drawVLine(uint16_t x, uint8_t y, uint8_t h, uint8_t color)
 inline void drawRectEven(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t color)
 {
     uint16_t offset = 20 * y;
-    asm  ("mov $40960, %%bx\n" // $40960 is the address of the VGA graphics ram
-        "add %2, %%bx\n"
+    asm  (
+        "add $40960, %%bx\n"  // $40960 is the address of the VGA graphics ram
         "mov %%bx, %%es\n"    // set segment register to VGA
-        "mov %3, %%al\n"      // set color
-        "mov %3, %%ah\n"      // set color
+        "mov %%al, %%ah\n"    // set color
         "cld\n"               // set DF to 0
+        "shrw $1, %1\n"       // divide length by 2
         "%=:\n"
         "mov %0, %%di\n"      // set offset to x
         "mov %1, %%cx\n"      // set length to w
-        "shrw $1, %%cx\n"     // divide length by 2
         "rep stosw\n"         // copy ax -> es:di++ until cx-- == 0
 
         "add $20, %%bx\n"     // skip to next line (320 / 16 = 20)
         "mov %%bx, %%es\n"    
-        "sub $1, %4\n"        // decrement h
-        "jnz %=b\n"          // loop until h is 0
+        "dec %4\n"            // decrement h
+        "jnz %=b\n"           // loop until h is 0
         :
-        : "m" (x), "m" (w), "r" (offset), "m" (color), "r" (h)
-        : "es", "ax", "cx", "di", "bx");
+        : "r" (x), "m" (w), "b" (offset), "Ral" (color), "r" (h)
+        : "es", "ah", "cx", "di");
 }
 
 inline void drawRectOdd(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t color)
 {
     uint16_t offset = 20 * y;
-    asm  ("mov $40960, %%bx\n" // $40960 is the address of the VGA graphics ram
-        "add %2, %%bx\n"
+    asm  (
+        "add $40960, %%bx\n"  // $40960 is the address of the VGA graphics ram
         "mov %%bx, %%es\n"    // set segment register to VGA
-        "mov %3, %%al\n"      // set color
-        "mov %3, %%ah\n"      // set color
+        "mov %%al, %%ah\n"    // set color
         "cld\n"               // set DF to 0
+        "shrw $1, %1\n"       // divide length by 2
         "%=:\n"
         "mov %0, %%di\n"      // set offset to x
         "mov %1, %%cx\n"      // set length to w
-        "shrw $1, %%cx\n"     // divide length by 2
         "rep stosw\n"         // copy ax -> es:di++ until cx-- == 0
         "stosb\n"             // store an additional byte as width is odd
 
         "add $20, %%bx\n"     // skip to next line (320 / 16 = 20)
         "mov %%bx, %%es\n"    
-        "sub $1, %4\n"        // decrement h
+        "dec %4\n"            // decrement h
         "jnz %=b\n"           // loop until h is 0
         :
-        : "m" (x), "m" (w), "r" (offset), "m" (color), "r" (h)
-        : "es", "ax", "cx", "di", "bx");
+        : "r" (x), "m" (w), "b" (offset), "Ral" (color), "r" (h)
+        : "es", "ah", "cx", "di");
 }
 
 

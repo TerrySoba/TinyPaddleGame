@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "sound_engine.h"
 #include "print.h"
+#include "compiler_version.h"
 
 #define abs(x) ((x > 0)?(x):(-x))
 
@@ -151,11 +152,7 @@ int main()
 
     deInitSound(&soundContext);
 
-#if defined(__GNUC__)
-    printString("Thanks for playing!\r\nBuilt using GCC 6.3 in 2021\r\n$");
-#elif defined(__WATCOMC__)
-    printString("Thanks for playing!\r\nBuilt using OpenWatcom 1.9 in 2021\r\n$");
-#endif
+    printString("Thanks for playing!\r\nBuilt using " COMPILER_VERSION "\r\n");
 
     return 0;
 }

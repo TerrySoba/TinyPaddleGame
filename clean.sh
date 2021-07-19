@@ -5,3 +5,5 @@ rm source/*.com
 rm source/*.err
 rm source/*.i
 rm source/*.s
+rm source/*.lnk
+

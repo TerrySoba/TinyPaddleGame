@@ -8,21 +8,42 @@
 #include "compiler_version.h"
 
 #define abs(x) ((x > 0)?(x):(-x))
+#define TO_SUBPIXELS(val) ((val) << 4)
+#define FROM_SUBPIXELS(val) ((val) >> 4)
 
-typedef struct _Paddle
+typedef struct _Rectangle
 {
     int16_t x, y, w, h;
-} Paddle;
+} Rectangle;
 
 
-void drawPaddle(const Paddle* paddle, uint8_t color)
+void drawRectangle(const Rectangle* rectangle, uint8_t color)
 {
-    drawRect(paddle->x, paddle->y, paddle->w, paddle->h, color);
+    drawRect(
+        FROM_SUBPIXELS(rectangle->x),
+        FROM_SUBPIXELS(rectangle->y),
+        FROM_SUBPIXELS(rectangle->w),
+        FROM_SUBPIXELS(rectangle->h),
+        color);
 }
 
 
-#define PLAYFIELD_H 177
-#define PLAYFIELD_W 317
+
+#define PLAYFIELD_H 180
+#define PLAYFIELD_W 320
+
+bool calculateCollision(const Rectangle* r1, const Rectangle* r2)
+{
+    if ( r1->x < r2->x + r2->w &&
+         r1->x + r1->w > r2->x &&
+         r1->y < r2->y + r2->h &&
+         r1->y + r1->h > r2->y)
+    {
+        return true;
+    }
+    return false;    
+}
+
 
 int main()
 {
@@ -32,14 +53,15 @@ int main()
     registerKeyboardHandler();
     videoInit(0x13);
 
-    int16_t dx = 4;
-    int16_t dy = 3;
+    
 
-    Paddle leftPaddle = {10,10,5,40};
-    Paddle rightPaddle = {300,10,5,40};
+    
+    Rectangle leftPaddle = {TO_SUBPIXELS(10),TO_SUBPIXELS(10),TO_SUBPIXELS(5),TO_SUBPIXELS(40)};
+    Rectangle rightPaddle = {TO_SUBPIXELS(300),TO_SUBPIXELS(10),TO_SUBPIXELS(5),TO_SUBPIXELS(40)};
 
     int leftColor = 3;
     int rightColor = 4;
+
 
     do 
     {
@@ -47,9 +69,10 @@ int main()
         int rightScore = 0;
         int leftScore_old = -1;
         int rightScore_old = -1;
+        int16_t dx = TO_SUBPIXELS(3); 
+        int16_t dy = TO_SUBPIXELS(3);
 
-        int16_t ballX = PLAYFIELD_W / 2;
-        int16_t ballY = PLAYFIELD_H / 2;
+        Rectangle ball = {TO_SUBPIXELS(PLAYFIELD_W) / 2, TO_SUBPIXELS(PLAYFIELD_H) / 2, TO_SUBPIXELS(3), TO_SUBPIXELS(3)};
 
         clearScreen();
         drawRect(0, 180, 320, 3, 8);
@@ -59,67 +82,67 @@ int main()
             processSound(&soundContext);
             waitForVSync();
             // first delete old gfx
-            drawRect(ballX, ballY, 3, 3, 0);
-            drawPaddle(&leftPaddle, 0);
-            drawPaddle(&rightPaddle, 0);
+            drawRectangle(&ball, 0);
+            drawRectangle(&leftPaddle, 0);
+            drawRectangle(&rightPaddle, 0);
 
 
             // handle inputs
-            if (s_keyQ) leftPaddle.y -= 2;
-            if (s_keyA) leftPaddle.y += 2;
+            if (s_keyQ) leftPaddle.y -= TO_SUBPIXELS(2);
+            if (s_keyA) leftPaddle.y += TO_SUBPIXELS(2);
             if (leftPaddle.y < 0) leftPaddle.y = 0;
-            if (leftPaddle.y > PLAYFIELD_H - leftPaddle.h) leftPaddle.y = PLAYFIELD_H - leftPaddle.h;
+            if (leftPaddle.y > TO_SUBPIXELS(PLAYFIELD_H) - leftPaddle.h) leftPaddle.y = TO_SUBPIXELS(PLAYFIELD_H) - leftPaddle.h;
 
-            if (s_keyUp) rightPaddle.y -= 2;
-            if (s_keyDown) rightPaddle.y += 2;
+            if (s_keyUp) rightPaddle.y -= TO_SUBPIXELS(2);
+            if (s_keyDown) rightPaddle.y += TO_SUBPIXELS(2);
             if (rightPaddle.y < 0) rightPaddle.y = 0;
-            if (rightPaddle.y > PLAYFIELD_H - rightPaddle.h) rightPaddle.y = PLAYFIELD_H - rightPaddle.h;
+            if (rightPaddle.y > TO_SUBPIXELS(PLAYFIELD_H) - rightPaddle.h) rightPaddle.y = TO_SUBPIXELS(PLAYFIELD_H) - rightPaddle.h;
 
 
             // now calculate physics
-            ballX += dx;
-            ballY += dy;
+            ball.x += dx;
+            ball.y += dy;
 
-            if (ballX >= rightPaddle.x && ballY >= rightPaddle.y && ballY <= rightPaddle.y + rightPaddle.h)
+            if (calculateCollision(&ball, &rightPaddle))
             {
-                dx = -abs(dx);
+                dx = -abs(dx) - 5;
                 playNote(&soundContext, G4, 70);
             }
-            if (ballX > PLAYFIELD_W)
+            if (ball.x + ball.w > TO_SUBPIXELS(PLAYFIELD_W))
             {
                 dx = -abs(dx);
-                ballX = PLAYFIELD_W;
+                ball.x = TO_SUBPIXELS(PLAYFIELD_W) - ball.w;
                 ++leftScore;
                 playNote(&soundContext, D4b, 70);
             }
-            if (ballX <= leftPaddle.x && ballY >= leftPaddle.y && ballY <= leftPaddle.y + leftPaddle.h)
+            if (calculateCollision(&ball, &leftPaddle))
             {
-                dx = abs(dx);
+                dx = abs(dx) + 5;
                 playNote(&soundContext, G4b, 70);
             }
-            if (ballX < 0)
+            if (ball.x < 0)
             {
                 dx = abs(dx);
-                ballX = 0;
+                ball.x = 0;
                 ++rightScore;
                 playNote(&soundContext, D4b, 70);
             }
-            if (ballY > PLAYFIELD_H)
+            if (ball.y + ball.h > TO_SUBPIXELS(PLAYFIELD_H))
             {
                 dy = -abs(dy);
-                ballY = PLAYFIELD_H;
+                ball.y = TO_SUBPIXELS(PLAYFIELD_H) - ball.h;
             }
-            if (ballY < 0)
+            if (ball.y < 0)
             {
                 dy = abs(dy);
-                ballY = 0;
+                ball.y = 0;
             }
 
             // now draw gfx
             
-            drawRect(ballX, ballY, 3, 3, 0xf);
-            drawPaddle(&leftPaddle, leftColor);
-            drawPaddle(&rightPaddle, rightColor);
+            drawRectangle(&ball, 0xf);
+            drawRectangle(&leftPaddle, leftColor);
+            drawRectangle(&rightPaddle, rightColor);
 
             // now draw score if it changed
             if (leftScore != leftScore_old || 

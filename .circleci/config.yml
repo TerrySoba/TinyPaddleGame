@@ -12,6 +12,7 @@ jobs: # basic units of work in a run
       - run: DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:tkchia/build-ia16
       - run: DEBIAN_FRONTEND=noninteractive apt update && apt install -y upx make libi86-ia16-elf  gcc-ia16-elf g++-ia16-elf
       - run: cd source && make test
+      - run: mkdir source/release && cp source/game.com source/release
       - store_artifacts:
           path: source/game.com
       - persist_to_workspace:
@@ -26,7 +27,7 @@ jobs: # basic units of work in a run
           at: .
       - run:
           name: "Publish Release on GitHub"
-          command: ls -lha source
+          command: ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete RollingRelease ./source/release
 
 workflows:
   build_and_publish:

@@ -14,6 +14,10 @@ jobs: # basic units of work in a run
       - run: cd source && make test
       - store_artifacts:
           path: source/game.com
+      - persist_to_workspace:
+          root: .
+          paths:
+            - source
   publish:
     docker:
       - image: cibuilds/github:0.10
@@ -22,7 +26,7 @@ jobs: # basic units of work in a run
           at: .
       - run:
           name: "Publish Release on GitHub"
-          command: ls -lha
+          command: ls -lha source
 
 workflows:
   build_and_publish:

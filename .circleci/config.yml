@@ -19,10 +19,10 @@ jobs: # basic units of work in a run
       - image: cibuilds/github:0.10
     steps:
       - attach_workspace:
-          at: ./artifacts
+          at: .
       - run:
           name: "Publish Release on GitHub"
-          command: ls ./artifacts/source/
+          command: ls -lha
 
 workflows:
   build_and_publish:

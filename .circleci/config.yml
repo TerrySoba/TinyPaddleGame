@@ -12,3 +12,5 @@ jobs: # basic units of work in a run
       - run: DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:tkchia/build-ia16
       - run: DEBIAN_FRONTEND=noninteractive apt update && apt install -y upx make libi86-ia16-elf  gcc-ia16-elf g++-ia16-elf
       - run: cd source && make test
+      - store_artifacts:
+          path: source/game.com

@@ -106,26 +106,26 @@ int main()
             if (calculateCollision(&ball, &rightPaddle))
             {
                 dx = -abs(dx) - 5;
-                playNote(&soundContext, G4, 70);
+                playNote(&soundContext, G4, 30);
             }
             if (ball.x + ball.w > TO_SUBPIXELS(PLAYFIELD_W))
             {
                 dx = -abs(dx);
                 ball.x = TO_SUBPIXELS(PLAYFIELD_W) - ball.w;
                 ++leftScore;
-                playNote(&soundContext, D4b, 70);
+                playNote(&soundContext, D4b, 30);
             }
             if (calculateCollision(&ball, &leftPaddle))
             {
                 dx = abs(dx) + 5;
-                playNote(&soundContext, G4b, 70);
+                playNote(&soundContext, G4b, 30);
             }
             if (ball.x < 0)
             {
                 dx = abs(dx);
                 ball.x = 0;
                 ++rightScore;
-                playNote(&soundContext, D4b, 70);
+                playNote(&soundContext, D4b, 30);
             }
             if (ball.y + ball.h > TO_SUBPIXELS(PLAYFIELD_H))
             {

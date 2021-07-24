@@ -62,6 +62,9 @@ int main()
     int leftColor = 3;
     int rightColor = 4;
 
+    int leftPaddleColor = leftColor;
+    int rightPaddleColor = rightColor;
+
 
     do 
     {
@@ -106,6 +109,7 @@ int main()
             if (calculateCollision(&ball, &rightPaddle))
             {
                 dx = -abs(dx) - 5;
+                rightPaddleColor += 10;
                 playNote(&soundContext, G4, 30);
             }
             if (ball.x + ball.w > TO_SUBPIXELS(PLAYFIELD_W))
@@ -118,6 +122,7 @@ int main()
             if (calculateCollision(&ball, &leftPaddle))
             {
                 dx = abs(dx) + 5;
+                leftPaddleColor += 10;
                 playNote(&soundContext, G4b, 30);
             }
             if (ball.x < 0)
@@ -138,11 +143,14 @@ int main()
                 ball.y = 0;
             }
 
+            if (rightPaddleColor > rightColor) --rightPaddleColor;
+            if (leftPaddleColor > leftColor) --leftPaddleColor;
+
+
             // now draw gfx
-            
             drawRectangle(&ball, 0xf);
-            drawRectangle(&leftPaddle, leftColor);
-            drawRectangle(&rightPaddle, rightColor);
+            drawRectangle(&leftPaddle, leftPaddleColor);
+            drawRectangle(&rightPaddle, rightPaddleColor);
 
             // now draw score if it changed
             if (leftScore != leftScore_old || 

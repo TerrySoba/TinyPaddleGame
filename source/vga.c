@@ -16,7 +16,8 @@ void videoInit(uint8_t mode)
         "int $0x10"
         : 
         : "Ral" (mode)
-        : "ah");
+        : "ah"
+    );
 }
 #endif
 
@@ -68,7 +69,8 @@ inline void drawVLine(uint16_t x, uint8_t y, uint8_t h, uint8_t color)
         "loop %=b\n"         // loop until cx is 0 (loop decrements cx each loop)
         :
         : "b" (x), "Ral" (y), "Rdl" (color), "Rcl" (h)
-        : "ds", "ah", "ch");
+        : "ds", "ah", "ch"
+    );
 }
 
 inline void drawRectEven(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t color)
@@ -91,7 +93,8 @@ inline void drawRectEven(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t c
         "jnz %=b\n"           // loop until h is 0
         :
         : "r" (x), "m" (w), "b" (offset), "Ral" (color), "r" (h)
-        : "es", "ah", "cx", "di");
+        : "es", "ah", "cx", "di"
+    );
 }
 
 inline void drawRectOdd(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t color)
@@ -115,7 +118,8 @@ inline void drawRectOdd(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t co
         "jnz %=b\n"           // loop until h is 0
         :
         : "r" (x), "m" (w), "b" (offset), "Ral" (color), "r" (h)
-        : "es", "ah", "cx", "di");
+        : "es", "ah", "cx", "di"
+    );
 }
 
 

@@ -6,6 +6,7 @@
 #include "sound_engine.h"
 #include "print.h"
 #include "compiler_version.h"
+#include "title.h"
 
 #define abs(x) ((x > 0)?(x):(-x))
 #define TO_SUBPIXELS(val) ((val) << 4)
@@ -65,6 +66,9 @@ int main()
     int leftPaddleColor = leftColor;
     int rightPaddleColor = rightColor;
 
+    clearScreen();
+    drawTitle();
+    while (!s_keyEsc && !s_keySpace);
 
     do 
     {
@@ -72,12 +76,13 @@ int main()
         int rightScore = 0;
         int leftScore_old = -1;
         int rightScore_old = -1;
-        int16_t dx = TO_SUBPIXELS(3); 
-        int16_t dy = TO_SUBPIXELS(3);
+        int16_t dx = TO_SUBPIXELS(1);
+        int16_t dy = TO_SUBPIXELS(2);
 
         Rectangle ball = {TO_SUBPIXELS(PLAYFIELD_W) / 2, TO_SUBPIXELS(PLAYFIELD_H) / 2, TO_SUBPIXELS(3), TO_SUBPIXELS(3)};
 
         clearScreen();
+        
         drawRect(0, 180, 320, 3, 8);
 
         do

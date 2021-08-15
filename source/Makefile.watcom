@@ -1,4 +1,4 @@
-objects_game = 	main.o vga.o keyboard.o draw_number.o adlib.o sound_engine.o print.o
+objects_game = 	main.o vga.o keyboard.o draw_number.o adlib.o sound_engine.o print.o title.o
 coptions = -ms -oneatx -xd -zp4 -0
 
 dest     = game.exe
@@ -15,6 +15,7 @@ draw_number.o: draw_number.h vga.h
 adlib.o: adlib.h
 sound_engine.o: sound_engine.h adlib.h
 print.o: print.h
+title.o: title.h
 
 %.o : %.c
 	wpp $(coptions) $<

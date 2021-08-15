@@ -207,14 +207,16 @@ if __name__ == "__main__":
     rectangles  = loadSvgRectangles(args.input_svg, 320, 200)
 
     with open(args.output_c, "w") as file:
+        file.write("struct RectangleColor titleGfx[] = { \n")
         for rect in rectangles:
-            file.write("drawRect({}, {}, {}, {}, {});\n".format(
+            file.write("    {{ {}, {}, {}, {}, {} }},\n".format(
                 round(rect.x),
                 round(rect.y),
                 round(rect.w),
                 round(rect.h),
                 rect.color))
-            
+        file.write("};\n")
+        file.write("#define titleGfxSize {}".format(len(rectangles)))
 
 
     print(args.input_svg, args.output_c)

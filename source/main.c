@@ -67,7 +67,9 @@ int main()
     int rightPaddleColor = rightColor;
 
     clearScreen();
+
     drawTitle();
+
     while (!s_keyEsc && !s_keySpace);
 
     do 

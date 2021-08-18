@@ -3,10 +3,14 @@
 #if defined(__WATCOMC__)
 #include <conio.h>
 #include <string.h>
+
+
 #define inport(px) inpw(px)
 #define inportb(px) inp(px)
 
 #endif
+
+#define abs(val) (((val) > 0)?(val):-(val))
 
 
 #if defined(__GNUC__)
@@ -152,10 +156,104 @@ void drawRect(uint16_t x, uint8_t y, uint16_t w, uint8_t h, uint8_t color)
 }
 #endif
 
-
 void clearScreen()
 {
     drawRect(0, 0, SCREEN_W, SCREEN_H, 0);
+}
+
+
+void drawPixel(int x, int y, uint8_t color)
+{
+#if defined(__WATCOMC__)
+    char far* screen = (char far*)(0xA0000000L);
+#elif defined(__GNUC__)
+    char __far* screen = (char __far*)(0xA0000000L);
+#endif
+    screen[y * 320 + x] = color;
+}
+
+
+void drawLine(int x0, int y0, int x1, int y1, uint8_t color) {
+ 
+  int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+  int err = (dx>dy ? dx : -dy)/2, e2;
+ 
+  for(;;){
+    drawPixel(x0,y0,color);
+    if (x0==x1 && y0==y1) break;
+    e2 = err;
+    if (e2 >-dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+  }
+}
+
+
+void drawHLine(int x, int y, int length, uint8_t color)
+{
+#if defined(__WATCOMC__)
+    char far* screen = (char far*)(0xA0000000L);
+#elif defined(__GNUC__)
+    char __far* screen = (char __far*)(0xA0000000L);
+#endif
+    screen += y * 320 + x;
+    for (int i = 0; i < length; ++i)
+    {
+        *screen++ = color;
+    }
+}
+
+void drawCircle(int x0, int y0, int radius, uint8_t color, bool filled)
+{
+    int f = 1 - radius;
+    int ddF_x = 0;
+    int ddF_y = -2 * radius;
+    int x = 0;
+    int y = radius;
+ 
+    drawPixel(x0, y0 + radius, color);
+    drawPixel(x0, y0 - radius, color);
+    drawPixel(x0 + radius, y0, color);
+    drawPixel(x0 - radius, y0, color);
+ 
+    if (filled)
+    {
+        drawHLine(x0 - radius, y0, 2 * radius, color);
+    }
+
+    while(x < y) 
+    {
+        if(f >= 0) 
+        {
+            y--;
+            ddF_y += 2;
+            f += ddF_y;
+        }
+        x++;
+        ddF_x += 2;
+        f += ddF_x + 1;
+        if (filled)
+        {
+            drawHLine(x0 - x, y0 + y, 2 * x, color);
+            drawHLine(x0 - x, y0 - y, 2 * x, color);
+            drawHLine(x0 - y, y0 + x, 2 * y, color);
+            drawHLine(x0 - y, y0 - x, 2 * y, color);
+        }
+        else // not filled
+        { 
+            drawPixel(x0 + x, y0 + y, color);
+            drawPixel(x0 - x, y0 + y, color);
+
+            drawPixel(x0 + x, y0 - y, color);
+            drawPixel(x0 - x, y0 - y, color);
+
+            drawPixel(x0 + y, y0 + x, color);
+            drawPixel(x0 - y, y0 + x, color);
+
+            drawPixel(x0 + y, y0 - x, color);
+            drawPixel(x0 - y, y0 - x, color);
+        }
+    }
 }
 
 

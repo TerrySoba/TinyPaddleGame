@@ -1,10 +1,32 @@
 import xml.etree.ElementTree as ET
 import argparse
 import re
+import math
 
 def colorDiff(color1, color2):
     # very simplistic euclidean distance...
     return (color1[0] - color2[0])**2 + (color1[1] - color2[1])**2 + (color1[2] - color2[2])**2
+
+
+
+class Transformation:
+    def __init__(self, a, b, c, d, e, f):
+        self._matrix = [a,b,c,d,e,f]
+
+    def __init__(self, off_x, off_y):
+        self._matrix = [0,0,0,0,off_x,off_y]
+        pass
+
+    def __init__(self, angle):
+        self._matrix = [math.cos(angle),math.sin(angle),-math.sin(angle),math.cos(angle),0,0]
+        pass
+
+    def apply(self, x_in, y_in):
+        x = self._matrix[0] * x_in + self._matrix[2] * y_in + self._matrix[4]
+        y = self._matrix[1] * x_in + self._matrix[3] * y_in + self._matrix[5]
+        return [x,y]
+
+
 
 rgbiColors = [
     (0x00,0x00,0x00),
@@ -80,7 +102,7 @@ def parseTranform(transformInput):
     if transformInput is None:
         return nullTranform
 
-    print(transformInput)
+    # print(transformInput)
     translate = re.search("translate\((.*)\,(.*)\)", transformInput)
     scale1 = re.search("scale\(([^,]*)\)", transformInput)
     scale2 = re.search("scale\((.*)\,(.*)\)", transformInput)
@@ -167,6 +189,36 @@ def parseStyle(style):
     return getBestRgbiColor(r,g,b)
 
 
+def isFloat(val):
+    try:
+        float(val)
+        return True
+    except:
+        return False
+
+def parsePath(path):
+    tmp = path.split(",")
+    entries = []
+    for x in tmp:
+        for s in x.split(" "):
+            entries.append(s)
+
+
+    x = 0
+    y = 0
+    pathCoords = []
+    while len(entries) > 0:
+        entry = entries.pop(0)
+        if entry == "m":
+            while len(entries) >= 2:
+                if isFloat(entries[0]) and isFloat(entries[1]):
+                    x += float(entries.pop(0))
+                    y += float(entries.pop(0))
+                    pathCoords.append([x, y])
+
+    return pathCoords
+
+
 
 def loadSvgRectangles(file_path, target_width, target_height):
     tree = ET.parse(file_path)
@@ -175,6 +227,8 @@ def loadSvgRectangles(file_path, target_width, target_height):
     viewbox_transform = parseViewbox(root.get("viewBox"))
 
     rectangles = []
+    paths = []
+    circles = []
 
     g_elements = root.findall(".//svg:g", ns)
 
@@ -190,10 +244,32 @@ def loadSvgRectangles(file_path, target_width, target_height):
             rectangle = viewbox_transform(global_transform(rect_transform(rectangle)), target_width, target_height)
             rectangle.normalize()
             # transform = rect.get("transform")
-            print("x:{} y:{} w:{} h:{}".format(rectangle.x,rectangle.y,rectangle.w,rectangle.h))
+            # print("x:{} y:{} w:{} h:{}".format(rectangle.x,rectangle.y,rectangle.w,rectangle.h))
             rectangles.append(rectangle)
 
-    return rectangles
+        path_elements = g.findall(".//svg:path", ns)
+        for path in path_elements:
+            rgbiColor = parseStyle(path.get("style"))
+            path_coords = parsePath(path.get("d"))
+            transformed = []
+            for coord in path_coords:
+                rect = Rectangle(coord[0], coord[1], 0, 0, 0)
+                rect = viewbox_transform(global_transform(rect), target_width, target_height)
+                transformed.append([rect.x, rect.y])
+            paths.append(transformed)
+
+        circle_elements = g.findall(".//svg:circle", ns)
+        for circle in circle_elements:
+            rgbiColor = parseStyle(circle.get("style"))
+            cx = float(circle.get("cx"))
+            cy = float(circle.get("cy"))
+            r = float(circle.get("r"))
+            rect = Rectangle(cx, cy, r, r, rgbiColor)
+            rect = viewbox_transform(global_transform(rect), target_width, target_height)
+            circles.append(rect)
+
+
+    return [rectangles, paths, circles]
     
 
 
@@ -204,19 +280,29 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    rectangles  = loadSvgRectangles(args.input_svg, 320, 200)
+    [rectangles, paths, circles]  = loadSvgRectangles(args.input_svg, 320, 200)
 
     with open(args.output_c, "w") as file:
-        file.write("struct RectangleColor titleGfx[] = { \n")
         for rect in rectangles:
-            file.write("    {{ {}, {}, {}, {}, {} }},\n".format(
+            file.write("drawRect({}, {}, {}, {}, {});\n".format(
                 round(rect.x),
                 round(rect.y),
                 round(rect.w),
                 round(rect.h),
                 rect.color))
-        file.write("};\n")
-        file.write("#define titleGfxSize {}".format(len(rectangles)))
+        for circle in circles:
+            file.write("drawCircle({}, {}, {}, {}, true);\n".format(
+                round(circle.x),
+                round(circle.y),
+                round(circle.w),
+                circle.color))
+        for path in paths:
+            for i in range(len(path)):
+                print("drawLine({}, {}, {}, {}, 1);".format(
+                    round(path[i][0]),
+                    round(path[i][1]),
+                    round(path[(i+1) % len(path)][0]),
+                    round(path[(i+1) % len(path)][1])))
 
 
-    print(args.input_svg, args.output_c)
+    # print(args.input_svg, args.output_c)

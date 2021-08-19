@@ -70,6 +70,8 @@ int main()
 
     drawTitle();
 
+    printString("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n  Press <SPACEBAR> to start game\r\n  or <ESC> to exit back to DOS.");
+
     while (!s_keyEsc && !s_keySpace);
 
     do 

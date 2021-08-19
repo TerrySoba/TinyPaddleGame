@@ -189,19 +189,33 @@ void drawLine(int x0, int y0, int x1, int y1, uint8_t color) {
 }
 
 
-void drawHLine(int x, int y, int length, uint8_t color)
+void drawHLine(int16_t x, uint8_t y, int16_t length, uint8_t color)
 {
-#if defined(__WATCOMC__)
+#if defined(__GNUC__)
+    uint16_t offset = 20 * y;
+    asm (
+        "add $40960, %%bx\n"  // $40960 is the address of the VGA graphics ram
+        "mov %%bx, %%es\n"    // set segment register to VGA
+        "mov %%al, %%ah\n"    // set color
+        "cld\n"               // set DF to 0
+        "shrw $1, %1\n"       // divide length by 2
+        "mov %3, %%di\n"
+        "rep stosw\n"         // copy ax -> es:di++ until cx-- == 0
+        "jnc %=f\n"
+        "stosb\n"             // store an additional byte as width is odd
+        "%=:\n"
+        :
+        : "b" (offset), "c" (length), "Ral" (color), "m" (x)
+        : "ds", "ah", "di", "es"
+    );
+#elif defined(__WATCOMC__)
     char far* screen = (char far*)(0xA0000000L);
-#elif defined(__GNUC__)
-    char __far* screen = (char __far*)(0xA0000000L);
-#endif
     screen += y * 320 + x;
-    for (int i = 0; i < length; ++i)
-    {
-        *screen++ = color;
-    }
+    _fmemset(screen, color, length);
+#endif
+
 }
+
 
 void drawCircle(int x0, int y0, int radius, uint8_t color, bool filled)
 {
@@ -218,7 +232,7 @@ void drawCircle(int x0, int y0, int radius, uint8_t color, bool filled)
  
     if (filled)
     {
-        drawHLine(x0 - radius, y0, 2 * radius, color);
+        drawHLine(x0 - radius, y0, 2 * radius + 1, color);
     }
 
     while(x < y) 
@@ -234,22 +248,19 @@ void drawCircle(int x0, int y0, int radius, uint8_t color, bool filled)
         f += ddF_x + 1;
         if (filled)
         {
-            drawHLine(x0 - x, y0 + y, 2 * x, color);
-            drawHLine(x0 - x, y0 - y, 2 * x, color);
-            drawHLine(x0 - y, y0 + x, 2 * y, color);
-            drawHLine(x0 - y, y0 - x, 2 * y, color);
+            drawHLine(x0 - x, y0 + y, 2 * x + 1, color);
+            drawHLine(x0 - x, y0 - y, 2 * x + 1, color);
+            drawHLine(x0 - y, y0 + x, 2 * y + 1, color);
+            drawHLine(x0 - y, y0 - x, 2 * y + 1, color);
         }
         else // not filled
         { 
             drawPixel(x0 + x, y0 + y, color);
             drawPixel(x0 - x, y0 + y, color);
-
             drawPixel(x0 + x, y0 - y, color);
             drawPixel(x0 - x, y0 - y, color);
-
             drawPixel(x0 + y, y0 + x, color);
             drawPixel(x0 - y, y0 + x, color);
-
             drawPixel(x0 + y, y0 - x, color);
             drawPixel(x0 - y, y0 - x, color);
         }
